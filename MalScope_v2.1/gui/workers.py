@@ -76,6 +76,32 @@ class AnalysisWorker(QThread):
                         "entropy": ur.entropy,
                     }
 
+                    if not ur.success and ur.needs_password:
+                        result["behavior"] = self._empty_behavior_dict(
+                            "Archive analysis blocked: ZIP password or AES ZIP support is required."
+                        )
+                        result["decompile"] = {
+                            "success": False,
+                            "source_code": ur.source_code,
+                            "error": ur.error,
+                            "backend_used": ur.backend_used,
+                            "python_version": ur.language,
+                            "magic_number": 0,
+                            "imports": [],
+                            "strings": [],
+                            "pseudo_source": "",
+                            "opcode_summary": {},
+                            "entropy": {"average_constant_entropy": ur.entropy},
+                        }
+                        result["code_objects"] = []
+                        result["opcodes"] = []
+                        result["cfg_dot"] = ""
+                        result["cfg_stats"] = {}
+                        result["yara"] = self._run_yara(filepath, "")
+                        self.progress.emit("Analysis blocked: ZIP password/support required")
+                        self.finished.emit(result)
+                        return
+
                     # Still run malware detection on strings + source
                     self.progress.emit("Analyzing malware behavior...")
                     from core.malware_detector import MalwareDetector
@@ -269,6 +295,19 @@ class AnalysisWorker(QThread):
             "obfuscation_detected": behavior.obfuscation_detected,
             "observed_facts": behavior.observed_facts,
             "ai_hypotheses": behavior.ai_hypotheses,
+        }
+
+    def _empty_behavior_dict(self, summary: str) -> dict:
+        return {
+            "threat_score": 0,
+            "confidence_score": 0,
+            "summary": summary,
+            "indicators": [],
+            "iocs": {},
+            "malware_families": [],
+            "obfuscation_detected": [],
+            "observed_facts": [],
+            "ai_hypotheses": [],
         }
 
     def _run_yara(self, filepath: str, source_code: str = "") -> dict:

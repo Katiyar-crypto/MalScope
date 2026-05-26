@@ -7,10 +7,9 @@ Extracts contents and routes to correct analyzer.
 import zipfile
 import os
 import tempfile
-import struct
 import shutil
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, List
 from dataclasses import dataclass, field
 
 
@@ -120,6 +119,7 @@ class ZipHandler:
             with zipfile.ZipFile(filepath) as zf:
                 result.file_list = zf.namelist()
                 result.is_encrypted = self.is_encrypted(filepath)
+                uses_aes = self._uses_winzip_aes(zf)
 
                 # Determine passwords to try
                 passwords_to_try: List[Optional[bytes]] = [None]  # Try no password first
@@ -143,6 +143,25 @@ class ZipHandler:
                 if safety_error:
                     result.error = safety_error
                     return result
+
+                if uses_aes:
+                    try:
+                        import pyzipper
+                    except ImportError:
+                        result.error = (
+                            "ZIP uses WinZip AES encryption (compression method 99), "
+                            "which Python's built-in zipfile cannot decrypt.\n"
+                            "Install pyzipper or run: pip install -r requirements.txt"
+                        )
+                        result.needs_password = True
+                        return result
+                    return self._extract_with_pyzipper(
+                        filepath,
+                        output_dir,
+                        passwords_to_try,
+                        result,
+                        pyzipper,
+                    )
 
                 # Try extraction
                 extracted = False
@@ -184,6 +203,16 @@ class ZipHandler:
         result.success = True
         return result
 
+    def _finalize_extraction(self, result: ZipExtractResult) -> ZipExtractResult:
+        for root, dirs, files in os.walk(result.output_dir):
+            for fname in files:
+                fpath = os.path.join(root, fname)
+                result.extracted_files.append(fpath)
+
+        result.primary_file = self._pick_primary(result.extracted_files)
+        result.success = True
+        return result
+
     def _validate_archive(self, zf: zipfile.ZipFile) -> str:
         members = zf.infolist()
         if len(members) > self.MAX_FILES:
@@ -205,6 +234,9 @@ class ZipHandler:
         if total_size > self.MAX_UNCOMPRESSED_SIZE:
             return f"ZIP uncompressed size too large ({total_size:,} bytes)."
         return ""
+
+    def _uses_winzip_aes(self, zf: zipfile.ZipFile) -> bool:
+        return any(info.compress_type == 99 for info in zf.infolist())
 
     def _safe_extract_all(self, zf: zipfile.ZipFile, output_dir: str,
                           pwd: Optional[bytes] = None) -> List[str]:
@@ -231,6 +263,35 @@ class ZipHandler:
                 warnings.append(f"UTF-8 filename: {info.filename}")
 
         return warnings
+
+    def _extract_with_pyzipper(self, filepath: str, output_dir: str,
+                               passwords_to_try: List[Optional[bytes]],
+                               result: ZipExtractResult, pyzipper) -> ZipExtractResult:
+        extracted = False
+        for pwd in passwords_to_try:
+            try:
+                with pyzipper.AESZipFile(filepath) as zf:
+                    if pwd:
+                        zf.setpassword(pwd)
+                    result.warnings = self._safe_extract_all(zf, output_dir, pwd=None)
+                    result.password_found = pwd.decode("utf-8", errors="replace") if pwd else None
+                    result.password_tried = True
+                    extracted = True
+                    break
+            except (RuntimeError, zipfile.BadZipFile, NotImplementedError, ValueError):
+                continue
+            except Exception:
+                continue
+
+        if not extracted:
+            result.error = (
+                "ZIP uses WinZip AES encryption and no common password worked.\n"
+                "Please provide the password manually in the ZIP Password field."
+            )
+            result.needs_password = True
+            return result
+
+        return self._finalize_extraction(result)
 
     def _pick_primary(self, files: List[str]) -> Optional[str]:
         """Pick the most interesting file to analyze"""

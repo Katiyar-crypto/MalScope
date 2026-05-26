@@ -25,6 +25,7 @@ python-docx>=1.0.0
 # Malware / YARA
 # Windows note: Python 3.13 has prebuilt wheels. Python 3.14 may need Microsoft C++ Build Tools.
 yara-python>=4.3.0
+pyzipper>=0.3.6
 
 # Graph / Visualization
 networkx>=3.1

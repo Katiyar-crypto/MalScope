@@ -41,6 +41,30 @@ class ZipSafetyTests(unittest.TestCase):
             self.assertEqual(Path(result.primary_file).name, "sample.py")
             self.assertTrue((out_dir / "sample.py").exists())
 
+    def test_extracts_winzip_aes_zip_when_pyzipper_available(self):
+        try:
+            import pyzipper
+        except ImportError:
+            self.skipTest("pyzipper unavailable")
+        with tempfile.TemporaryDirectory() as td:
+            archive = Path(td) / "aes.zip"
+            out_dir = Path(td) / "out"
+            with pyzipper.AESZipFile(
+                archive,
+                "w",
+                compression=pyzipper.ZIP_DEFLATED,
+                encryption=pyzipper.WZ_AES,
+            ) as zf:
+                zf.setpassword(b"infected")
+                zf.writestr("sample.dll", b"MZ test dll")
+
+            result = ZipHandler().extract(str(archive), output_dir=str(out_dir))
+
+            self.assertTrue(result.success)
+            self.assertEqual(result.password_found, "infected")
+            self.assertEqual(Path(result.primary_file).name, "sample.dll")
+            self.assertTrue((out_dir / "sample.dll").exists())
+
 
 class ReportTests(unittest.TestCase):
     def test_html_report_escapes_untrusted_values(self):
