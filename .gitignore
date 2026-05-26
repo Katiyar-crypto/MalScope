@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Generated analysis outputs
+sample_results/
+*_result.json
+*_report.html
+*_report.md
+*_report.sarif
+*_bundle.zip
+
+# Packaged artifacts
+*.zip
+
+# Local/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
