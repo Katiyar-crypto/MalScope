@@ -1,0 +1,48 @@
+﻿# MalScope v2 - Universal Decompiler Requirements
+# Install: pip install -r requirements.txt
+
+# GUI
+PyQt6>=6.5.0
+
+# Python Bytecode Decompilation
+uncompyle6>=3.9.0
+decompyle3>=3.9.0
+xdis>=6.1.0
+
+# Binary Analysis
+pefile>=2023.2.7
+lief>=0.14.0
+pyelftools>=0.30
+capstone>=5.0.0
+
+# Android / Java
+# (javap from JDK, no pip package needed)
+
+# Office Documents
+olefile>=0.47
+python-docx>=1.0.0
+
+# Malware / YARA
+# Windows note: Python 3.13 has prebuilt wheels. Python 3.14 may need Microsoft C++ Build Tools.
+yara-python>=4.3.0
+
+# Graph / Visualization
+networkx>=3.1
+matplotlib>=3.7.0
+graphviz>=0.20.1
+
+# AI
+anthropic>=0.25.0
+openai>=1.0.0
+huggingface_hub>=0.22.0
+ollama>=0.2.0
+
+# Reporting
+jinja2>=3.1.2
+fpdf2>=2.7.0
+
+# Utilities
+requests>=2.31.0
+colorama>=0.4.6
+tqdm>=4.65.0
+pyinstxtractor-ng>=1.0.0

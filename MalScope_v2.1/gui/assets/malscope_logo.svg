@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="MalScope logo">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="18" x2="108" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00d9ff"/>
+      <stop offset="0.48" stop-color="#00ffcc"/>
+      <stop offset="1" stop-color="#6a5cff"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="#050a12"/>
+  <path d="M64 17 105 39v50l-41 22-41-22V39z" fill="#081626" stroke="#123a5c" stroke-width="4"/>
+  <circle cx="64" cy="64" r="35" fill="none" stroke="url(#ring)" stroke-width="7" filter="url(#glow)"/>
+  <path d="M34 64h17m26 0h17M64 34v17m0 26v17" stroke="#00d9ff" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="12" fill="#050a12" stroke="#00ffcc" stroke-width="5"/>
+  <path d="M44 87 32 99m52-12 12 12M44 41 32 29m52 12 12-12" stroke="#285f84" stroke-width="4" stroke-linecap="round"/>
+  <text x="64" y="119" text-anchor="middle" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#00d9ff">MALSCOPE</text>
+</svg>
