@@ -1061,6 +1061,17 @@ class MainWindow(QMainWindow):
         if path: self.load_file(path)
 
     def load_file(self, filepath: str):
+        if not filepath or not os.path.exists(filepath):
+            msg = f"File not found: {filepath}"
+            self.status_label.setText(msg[:120])
+            self.log_widget.log(msg, "error")
+            QMessageBox.warning(
+                self,
+                "File Not Found",
+                "MalScope could not find this file.\n\n"
+                "It may have been moved, deleted, quarantined, or blocked by permissions.",
+            )
+            return
         self.current_file = filepath
         fname = Path(filepath).name
         size = os.path.getsize(filepath)

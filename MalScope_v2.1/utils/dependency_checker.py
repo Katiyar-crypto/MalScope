@@ -16,6 +16,7 @@ PYTHON_PACKAGES = {
     "lief": "binary analysis",
     "elftools": "ELF analysis",
     "capstone": "disassembly",
+    "pyzipper": "AES ZIP sample extraction",
     "yara": "YARA scanning",
     "networkx": "CFG analysis",
     "graphviz": "CFG rendering",

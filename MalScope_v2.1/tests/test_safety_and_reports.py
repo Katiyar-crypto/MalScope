@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from core.zip_handler import ZipHandler
+from core.universal_decompiler import UniversalDecompiler
 from core.yara_scanner import YARAScanner
 from utils.dependency_checker import check_dependencies
 from utils.reporter import generate_report
@@ -137,6 +138,17 @@ class DependencyCheckTests(unittest.TestCase):
         self.assertIn("packages", health)
         self.assertIn("tools", health)
         self.assertIn("healthy", health)
+        self.assertIn("pyzipper", health["packages"])
+
+
+class UniversalInputTests(unittest.TestCase):
+    def test_missing_file_returns_structured_error(self):
+        result = UniversalDecompiler().analyze(str(ROOT / "does-not-exist.zip"))
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.file_type, "Missing File")
+        self.assertIn("File not found", result.error)
+        self.assertIn("Error", result.tabs)
 
 
 class YaraFallbackTests(unittest.TestCase):

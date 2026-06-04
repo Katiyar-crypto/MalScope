@@ -1031,6 +1031,19 @@ class UniversalDecompiler:
 
     def analyze(self, filepath: str, zip_password: str = None) -> UniversalResult:
         result = UniversalResult()
+        if not filepath or not os.path.exists(filepath):
+            result.file_type = "Missing File"
+            result.file_category = "Input Error"
+            result.language = "N/A"
+            result.error = f"File not found: {filepath}"
+            result.backend_used = "input validation"
+            result.tabs["Error"] = (
+                "Input file was not found.\n\n"
+                f"Path: {filepath}\n\n"
+                "The file may have been moved, deleted, quarantined by antivirus, "
+                "or blocked by the current sandbox permissions."
+            )
+            return result
         result.file_size = os.path.getsize(filepath)
         result.md5, result.sha256 = compute_hashes(filepath)
         result.entropy = shannon_entropy(filepath)
