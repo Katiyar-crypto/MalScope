@@ -112,13 +112,27 @@ EXTENSION_MAP = {
 }
 
 
+def _detect_by_extension(ext: str) -> Optional[Tuple[str, str, str]]:
+    if ext not in EXTENSION_MAP:
+        return None
+    ft, lang = EXTENSION_MAP[ext]
+    cat = "Script" if lang in ("Python","JavaScript","PowerShell","Bash","Ruby","Perl","PHP","VBScript","Batch") else "Binary"
+    return ft, cat, lang
+
+
 def detect_file_type(filepath: str) -> Tuple[str, str, str]:
     """Returns (file_type, category, language)"""
     ext = Path(filepath).suffix.lower()
     try:
         with open(filepath, "rb") as f:
             header = f.read(16)
+    except Exception:
+        by_ext = _detect_by_extension(ext)
+        if by_ext:
+            return by_ext
+        return "Unknown", "Unknown", "Unknown"
 
+    try:
         # Check magic bytes
         for sig, ftype in MAGIC_SIGNATURES.items():
             if header[:len(sig)] == sig:
@@ -143,10 +157,9 @@ def detect_file_type(filepath: str) -> Tuple[str, str, str]:
                 return ftype, "Binary", "Native"
 
         # Fallback to extension
-        if ext in EXTENSION_MAP:
-            ft, lang = EXTENSION_MAP[ext]
-            cat = "Script" if lang in ("Python","JavaScript","PowerShell","Bash","Ruby","Perl","PHP","VBScript","Batch") else "Binary"
-            return ft, cat, lang
+        by_ext = _detect_by_extension(ext)
+        if by_ext:
+            return by_ext
 
         # Try reading as text
         try:
@@ -163,7 +176,8 @@ def detect_file_type(filepath: str) -> Tuple[str, str, str]:
 
         return "Unknown Binary", "Unknown", "Unknown"
     except Exception as e:
-        return "Unknown", "Unknown", "Unknown"
+        by_ext = _detect_by_extension(ext)
+        return by_ext if by_ext else ("Unknown", "Unknown", "Unknown")
 
 
 def compute_hashes(filepath: str) -> Tuple[str, str]:
@@ -281,6 +295,14 @@ class PEAnalyzer:
             self._analyze_pe_fallback(filepath, result)
         except Exception as e:
             result.error = f"PE analysis failed: {e}"
+            result.backend_used = "pefile"
+            result.tabs["Error"] = (
+                "PE file could not be read by the parser.\n\n"
+                f"Path: {filepath}\n"
+                f"Error: {e}\n\n"
+                "This can happen when antivirus/quarantine, filesystem policy, "
+                "or malformed sample contents block direct reads after extraction."
+            )
 
     def _analyze_pe_fallback(self, filepath: str, result: UniversalResult):
         try:
@@ -1078,7 +1100,7 @@ class UniversalDecompiler:
             result.tabs["Pseudo-Source"] = r.pseudo_source
             result.metadata = {"python_version": r.python_version, "magic": r.magic_number}
 
-        elif file_type in ("PE EXE", "PE DLL"):
+        elif file_type in ("PE EXE", "PE DLL", "PE Executable", "PE DLL"):
             analyzer = PEAnalyzer()
             analyzer.analyze(filepath, result)
 
@@ -1309,6 +1331,13 @@ class UniversalDecompiler:
             result.tabs["Strings"] = "\n".join(result.strings)
         except Exception as e:
             result.error = f"Generic analysis failed: {e}"
+            result.backend_used = "generic string extractor"
+            result.tabs["Error"] = (
+                "Generic file read failed.\n\n"
+                f"Path: {filepath}\n"
+                f"Error: {e}\n\n"
+                "The sample may have been quarantined or blocked after extraction."
+            )
 
     def _format_file_info(self, filepath: str, result: UniversalResult) -> str:
         lines = [

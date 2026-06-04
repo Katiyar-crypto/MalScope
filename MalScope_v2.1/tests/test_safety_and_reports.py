@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from core.zip_handler import ZipHandler
-from core.universal_decompiler import UniversalDecompiler
+from core.universal_decompiler import UniversalDecompiler, detect_file_type
 from core.yara_scanner import YARAScanner
 from utils.dependency_checker import check_dependencies
 from utils.reporter import generate_report
@@ -149,6 +149,13 @@ class UniversalInputTests(unittest.TestCase):
         self.assertEqual(result.file_type, "Missing File")
         self.assertIn("File not found", result.error)
         self.assertIn("Error", result.tabs)
+
+    def test_extension_detection_falls_back_when_file_is_missing(self):
+        file_type, category, language = detect_file_type(str(ROOT / "blocked.exe"))
+
+        self.assertEqual(file_type, "PE Executable")
+        self.assertEqual(category, "Binary")
+        self.assertEqual(language, "Native/Python")
 
 
 class YaraFallbackTests(unittest.TestCase):
